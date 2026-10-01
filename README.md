@@ -1,4 +1,4 @@
-# Videojuego Mateo · demo
+# Atómico · demo del Videojuego Mateo
 
 Demo jugable en el navegador de un juego 2D de acción y plataformas. Se juega en el celular, en horizontal.
 

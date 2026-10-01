@@ -1,4 +1,4 @@
-<title>Videojuego Mateo</title>
+<title>Atómico</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@500;700&display=swap">
 <style>
@@ -32,6 +32,9 @@ canvas{display:block;width:100%;height:100%}
 .caja{max-width:560px;display:flex;flex-direction:column;gap:14px;align-items:center}
 .caja h1{font:400 clamp(30px,7vw,56px)/1 var(--display);margin:0;color:var(--cempasuchil);text-wrap:balance;
   text-shadow:3px 3px 0 var(--rosa),6px 6px 0 rgba(0,0,0,.35)}
+.caja #logo{width:clamp(56px,14vh,88px);height:auto;filter:drop-shadow(0 4px 0 rgba(0,0,0,.35));animation:late 2.4s ease-in-out infinite}
+@keyframes late{50%{transform:scale(1.06)}}
+@media (prefers-reduced-motion:reduce){.caja #logo{animation:none}}
 .caja h2{font:400 clamp(24px,5vw,40px)/1.05 var(--display);margin:0;color:var(--cempasuchil);text-wrap:balance}
 .caja p{margin:0;font-size:15px;line-height:1.45;opacity:.92}
 .eti{font:700 11px var(--texto);letter-spacing:.2em;text-transform:uppercase;color:var(--turquesa)}
@@ -47,7 +50,7 @@ button:focus-visible{outline:3px solid var(--turquesa);outline-offset:3px}
 #girar .tel{width:56px;height:90px;border:4px solid var(--tinta);border-radius:12px;animation:gira 2.2s ease-in-out infinite}
 @keyframes gira{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
 @media (prefers-reduced-motion:reduce){#girar .tel{animation:none;transform:rotate(-90deg)}}
-@media (max-height:380px){.btn{width:66px;height:66px}#bSalto{width:78px;height:78px;margin-bottom:26px}#bGolpe{width:72px;height:72px}
+@media (max-height:420px){.btn{width:66px;height:66px}#bSalto{width:78px;height:78px;margin-bottom:26px}#bGolpe{width:72px;height:72px}
   .caja{gap:9px}.caja p{font-size:13px}.ayuda{font-size:12.5px}}
 </style>
 
@@ -65,9 +68,10 @@ button:focus-visible{outline:3px solid var(--turquesa);outline-offset:3px}
 
 <div class="capa" id="inicio">
   <div class="caja">
-    <span class="eti">Demo jugable · Nivel 1</span>
-    <h1>Videojuego Mateo</h1>
-    <p>Cruza el desierto al atardecer, esquiva a las calaveras y a los zopilotes, junta monedas y rompe la piñata al final del camino.</p>
+    <span class="eti">Videojuego Mateo · Demo · Nivel 1</span>
+    <img id="logo" alt="Emblema de Atómico" width="88" height="88">
+    <h1>Atómico</h1>
+    <p>Ayuda a Atómico a cruzar el desierto al atardecer, esquiva a las calaveras y a los zopilotes, junta monedas y rompe la piñata al final del camino.</p>
     <div class="ayuda">
       <b>◀ ▶</b><span>Moverte</span>
       <b>SALTO</b><span>Saltar. Si lo mantienes en el aire, vuelas mientras dure la barra de vuelo.</span>
@@ -109,7 +113,7 @@ let VW = 960, esc = 1, dpr = 1;
 // ---------- imágenes ----------
 const img = {};
 let cargadas = 0;
-for (const k of ['correr','ataque','volar']) {
+for (const k of ['correr','ataque','volar','quieto','emblema']) {
   const im = new Image(); im.onload = () => cargadas++; im.src = SPR[k].src; img[k] = im;
   SPR[k].fw = SPR[k].W / SPR[k].n;
 }
@@ -475,7 +479,8 @@ function dibujarJugador() {
   if (j.volando) { hoja = 'volar'; f = Math.floor(tiempo * 12) % 4; ancla = 'centro'; }
   else if (j.ataque >= 0) { hoja = 'ataque'; f = Math.min(3, Math.floor(j.ataque / .34 * 4)); ancla = 'cabeza'; }
   else if (!j.piso) { hoja = 'correr'; f = 1; ancla = 'pies'; }
-  else { hoja = 'correr'; f = Math.abs(j.vx) > 20 ? Math.floor(j.anim) % 2 : 0; ancla = 'pies'; }
+  else if (Math.abs(j.vx) > 20) { hoja = 'correr'; f = Math.floor(j.anim) % 2; ancla = 'pies'; }
+  else { hoja = 'quieto'; f = 0; ancla = 'cabeza'; }
   const s = SPR[hoja], w = s.fw * DS, h = s.h * DS, x = px(j.x);
   let y;
   if (ancla === 'pies') y = j.y - h; else if (ancla === 'centro') y = j.y - 62 - h / 2; else y = j.y - h + 8;
@@ -485,7 +490,7 @@ function dibujarJugador() {
     ctx.fillStyle = 'rgba(20,8,20,.35)'; ctx.beginPath(); ctx.ellipse(x, sy + 2, 30 * k, 6 * k, 0, 0, 7); ctx.fill();
   }
   ctx.save(); ctx.translate(x, 0); if (j.dir < 0) ctx.scale(-1, 1);
-  let bob = 0; if (hoja === 'correr' && j.piso && Math.abs(j.vx) < 20) bob = Math.sin(tiempo * 3) * 1.5;
+  let bob = 0; if (hoja === 'quieto') bob = Math.sin(tiempo * 3) * 1.5;
   ctx.drawImage(img[hoja], f * s.fw, 0, s.fw, s.h, -w / 2, y + bob, w, h - bob);
   ctx.restore();
 }
@@ -580,14 +585,15 @@ function corazon(x, y, lleno) {
 }
 function hud() {
   const j = jugador;
-  ctx.fillStyle = 'rgba(29,19,48,.55)'; ctx.beginPath(); ctx.roundRect(12, 10, 330, 46, 12); ctx.fill();
-  for (let i = 0; i < 3; i++) corazon(36 + i * 28, 21, i < j.vidas);
-  ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(130, 33, 10, 0, 7); ctx.fill();
+  ctx.fillStyle = 'rgba(29,19,48,.55)'; ctx.beginPath(); ctx.roundRect(12, 10, 374, 46, 12); ctx.fill();
+  if (cargadas === 5) ctx.drawImage(img.emblema, 20, 13, 40, 40);
+  for (let i = 0; i < 3; i++) corazon(80 + i * 28, 21, i < j.vidas);
+  ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(174, 33, 10, 0, 7); ctx.fill();
   ctx.fillStyle = '#fff6e8'; ctx.font = '400 18px Bungee, sans-serif'; ctx.textAlign = 'left';
-  ctx.fillText(String(j.monedas), 146, 40);
-  ctx.font = '700 10px Rubik, sans-serif'; ctx.fillText('VUELO', 200, 29);
-  ctx.fillStyle = 'rgba(255,246,232,.2)'; ctx.fillRect(200, 34, 128, 9);
-  ctx.fillStyle = j.energia > 25 ? '#22c7b8' : '#ff3d7f'; ctx.fillRect(200, 34, 128 * j.energia / 100, 9);
+  ctx.fillText(String(j.monedas), 190, 40);
+  ctx.font = '700 10px Rubik, sans-serif'; ctx.fillText('VUELO', 244, 29);
+  ctx.fillStyle = 'rgba(255,246,232,.2)'; ctx.fillRect(244, 34, 128, 9);
+  ctx.fillStyle = j.energia > 25 ? '#22c7b8' : '#ff3d7f'; ctx.fillRect(244, 34, 128 * j.energia / 100, 9);
   // progreso del nivel
   const t = Math.min(1, j.x / PINATA_X);
   ctx.fillStyle = 'rgba(255,246,232,.25)'; ctx.fillRect(VW / 2 - 90, 20, 180, 4);
@@ -610,13 +616,14 @@ function dibujar() {
   for (const m of monedas) if (!m.tomada) dibujarMoneda(m);
   dibujarPinata();
   for (const e of enemigos) if (e.vivo && px(e.x) > -60 && px(e.x) < VW + 60) (e.t === 'calavera' ? dibujarCalavera : dibujarZopilote)(e);
-  if (cargadas === 3) dibujarJugador();
+  if (cargadas >= 4) dibujarJugador();
   dibujarBalas();
   dibujarParticulas();
   hud();
 }
 
 // ---------- estados ----------
+document.getElementById('logo').src = SPR.emblema.src;
 const capaInicio = document.getElementById('inicio'), capaMenu = document.getElementById('menu');
 function empezar() {
   try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); } catch (_) {}
@@ -639,7 +646,7 @@ function mostrarMenu(eti, tit, txt, seguir) {
 function terminar(gano) {
   estado = 'fin';
   const r = `Monedas: ${jugador.monedas} de ${totalMonedas} · Enemigos vencidos: ${vencidos} · Tiempo: ${Math.round(tiempo)} s`;
-  if (gano) mostrarMenu('Nivel completado', '¡Rompiste la piñata!', r, false);
+  if (gano) mostrarMenu('Nivel completado', '¡Atómico rompió la piñata!', r, false);
   else mostrarMenu('Fin del juego', 'Te quedaste sin vidas', r, false);
 }
 document.getElementById('jugar').onclick = empezar;
