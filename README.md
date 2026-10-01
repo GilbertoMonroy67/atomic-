@@ -2,7 +2,7 @@
 
 Demo jugable en el navegador de un juego 2D de acción y plataformas. Se juega en el celular, en horizontal.
 
-**Jugar:** https://gilbertomonroy67.github.io/videojuego-mateo-demo/
+**Jugar:** https://gilbertomonroy67.github.io/atomic-/
 
 ## Controles
 - ◀ ▶: moverse
